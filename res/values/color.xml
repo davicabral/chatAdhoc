@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="verde">#228B22</color>
+    <color name="branco">#FFFAFA</color>
+    <color name="limen">#FFDAB9</color>
+    <color name="actionBar">#6196B2</color>
+    <color name="selectedItem">#C4EAFF</color>
+    <color name="backgroundContatos">#FFE6C4</color>
+    <color name="backgroundItens">#FFF1DE</color>
+    
+</resources>

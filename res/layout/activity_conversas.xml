@@ -1,0 +1,39 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:weightSum="100"
+    tools:context=".ConversasActivity" >
+
+    <ListView
+        android:id="@+id/listaChat"
+        android:layout_width="match_parent"
+        android:layout_height="0dp" 
+        android:layout_weight="85">
+    </ListView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="15"
+        android:weightSum="100" >
+
+        <EditText
+            android:id="@+id/textoDigitado"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="90"
+            android:ems="10"
+            android:inputType="textMultiLine" />
+
+        <ImageButton
+            android:id="@+id/btnEnviar"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="10"
+            android:src="@android:drawable/ic_menu_send" />
+
+    </LinearLayout>
+
+</LinearLayout>

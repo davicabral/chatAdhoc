@@ -1,0 +1,12 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/file"
+          android:title="Arquivo" >
+        <!-- "file" submenu -->
+        
+    <item android:id="@+id/deleteTudo"
+          android:title="Deletar"
+          android:showAsAction="always"
+          android:icon="@android:drawable/ic_input_delete"
+           />
+    </item>
+</menu>
