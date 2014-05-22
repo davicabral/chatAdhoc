@@ -1,6 +1,7 @@
 package com.davioliveira.cantalk.adapters;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import android.content.Context;
 import android.graphics.BitmapFactory;
@@ -17,16 +18,36 @@ import com.davioliveira.cantalk.R;
 import com.davioliveira.cantalk.utils.Pessoa;
 
 public class AdapterContatos extends BaseAdapter{
+
+	private ArrayList<Pessoa> listaContatos;
+	private Context context;
 	
-	ArrayList<Pessoa> listaContatos;
-	Context context;
-	
-	public AdapterContatos(Context context, ArrayList<Pessoa> listaContatos)
-	{
-		this.listaContatos = listaContatos;
+	public AdapterContatos(Context context){
 		this.context = context;
+		listaContatos = new ArrayList<Pessoa>();
+	}
+
+	public void addContact(Pessoa pessoa){
+		listaContatos.add(pessoa);
+		notifyDataSetChanged();
 	}
 	
+	public void addContacts(List<Pessoa> pessoas){
+		for (Pessoa pessoa : pessoas) {
+			addContact(pessoa);
+		}
+	}
+
+	public void remContact(Pessoa pessoa){
+		listaContatos.remove(pessoa);
+		notifyDataSetChanged();
+	}
+
+	public void remContact(int position){
+		listaContatos.remove(position);
+		notifyDataSetChanged();
+	}
+		
 	@Override
 	public int getCount() {
 		// TODO Auto-generated method stub
@@ -35,7 +56,6 @@ public class AdapterContatos extends BaseAdapter{
 
 	@Override
 	public Pessoa getItem(int position) {
-		// TODO Auto-generated method stub
 		return listaContatos.get(position);
 	}
 
