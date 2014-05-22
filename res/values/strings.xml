@@ -10,5 +10,8 @@
     <string name="add">Adicionar</string>
     <string name="edit">Editar contato</string>
     <string name="title_activity_conversas">ConversasActivity</string>
+    <string name="title_activity_tela_login">TelaLogin</string>
+    <string name="nomeCadastro">Nome</string>
+    <string name="telCadastro">Tel:</string>
 
 </resources>

@@ -1,0 +1,56 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:weightSum="100"
+    tools:context=".TelaCadastro" >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="40"
+        android:gravity="center_vertical"
+        android:orientation="vertical" >
+
+        <ImageButton
+            android:id="@+id/imageBtnCadastro"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_photo" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="60"
+        android:paddingTop="25dp"
+        android:orientation="vertical" >
+
+        <EditText
+            android:id="@+id/editTextCadastroNome"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" 
+            android:hint="@string/nomeCadastro">
+			
+        </EditText>
+
+        <TextView
+            android:id="@+id/textViewTelefoneCadastro"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" 
+            android:paddingTop="25dp"
+            android:text="@string/telCadastro"/>
+	
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btnOkayCadastro"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="Okay" />
+
+</LinearLayout>
