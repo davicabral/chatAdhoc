@@ -1,7 +1,6 @@
 package com.davioliveira.cantalk;
 
 import java.io.ByteArrayOutputStream;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 import android.annotation.SuppressLint;
@@ -9,15 +8,25 @@ import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.net.wifi.p2p.WifiP2pDevice;
+import android.net.wifi.p2p.WifiP2pDeviceList;
+import android.net.wifi.p2p.WifiP2pManager;
+import android.net.wifi.p2p.WifiP2pManager.ActionListener;
+import android.net.wifi.p2p.WifiP2pManager.Channel;
+import android.net.wifi.p2p.WifiP2pManager.PeerListListener;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Base64;
+import android.util.Log;
 import android.view.ActionMode;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -38,16 +47,15 @@ import com.davioliveira.cantalk.db.PessoaDAO;
 import com.davioliveira.cantalk.dialogs.ConfimationDialog;
 import com.davioliveira.cantalk.dialogs.DialogAdd;
 import com.davioliveira.cantalk.utils.Pessoa;
-
+import com.davioliveira.cantalk.wifi_direct.WifiDirectBroadcastReceiver;
+import com.davioliveira.cantalk.wifi_direct.WifiDirectListener;
 
 @SuppressLint("NewApi")
-public class Lista_Contatos extends Activity {
-
+public class Lista_Contatos extends Activity implements WifiDirectListener, PeerListListener{
 	
 	protected static final int CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE = 1000;
 	public static ArrayList<Pessoa> listaContatos = new ArrayList<Pessoa>();
 	public static AdapterContatos adapter;
-	private static byte[] photoByte;
 	public PessoaDAO pessoaDAO;
 	private Pessoa pessoa;
 	private boolean hasPhoto;
@@ -55,9 +63,17 @@ public class Lista_Contatos extends Activity {
 	
 	public static int selectedItemId = -1;
 	
-	
-	ImageView imagem;
+//	private ImageView imagem;
+//	private static byte[] photoByte;
 	private int count = 0;
+	
+	//WifiDirect variables
+	private ImageView ivWifiDirect;
+	private boolean wifiDirectState;
+	private WifiP2pManager mManager;
+	private Channel mChannel;
+	private BroadcastReceiver mReceiver;
+	private IntentFilter mIntentFilter;
 	
 	@SuppressLint("NewApi")
 	@Override
@@ -75,161 +91,32 @@ public class Lista_Contatos extends Activity {
 
 		adapter = new AdapterContatos(this, listaContatos);
 		
+		configWifiDirect();
+		configListView();
+	}
+
+	private void configWifiDirect() {
+		ivWifiDirect = (ImageView) findViewById(R.id.ivWifiDirect);
+		mManager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
+	    mChannel = mManager.initialize(this, getMainLooper(), null);
+	    mReceiver = new WifiDirectBroadcastReceiver(mManager, mChannel, this, this);
+	    //Intent Filter
+	    mIntentFilter = new IntentFilter();
+	    mIntentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
+	    mIntentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
+	    mIntentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
+	    mIntentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
+	}
+
+	private void configListView() {
 		ListView listview = (ListView) findViewById(R.id.listView1);
 		listview.setAdapter(adapter);
 		listview.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
-		listview.setMultiChoiceModeListener(new MultiChoiceModeListener() {
-			//Implementar nova ACTIONBAR DINAMICA
-			@Override
-			public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-				// TODO Auto-generated method stub
-				return false;
-			}
-			
-			@Override
-			public void onDestroyActionMode(ActionMode mode) {
-				// TODO Auto-generated method stub
-				selectedItemId = -1;
-				adapter.notifyDataSetChanged();
-				
-			}
-			
-			@Override
-			public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-				// TODO Auto-generated method stub
-				MenuInflater inflater = mode.getMenuInflater();
-		        inflater.inflate(R.menu.lista__contatos_selecionados, menu);
-		        return true;
-
-			}
-			
-			@Override
-			public boolean onActionItemClicked(final ActionMode mode,  final MenuItem item) {
-				// TODO Auto-generated method stub
-				switch (item.getItemId()) {
-	            case R.id.delete: 
-	            	AlertDialog.Builder builderDelete = new Builder(Lista_Contatos.this); 
-    				builderDelete.setTitle("Confimação").setMessage("Deseja realmente apagar este contato?");
-    				builderDelete.setPositiveButton("Sim", new DialogInterface.OnClickListener() {
-						
-						@Override
-						public void onClick(DialogInterface dialog, int which) {
-							Pessoa p = listaContatos.get((Integer) mode.getTag());
-							if(pessoaDAO.delete(p))
-							{
-								
-								listaContatos.remove((Integer) mode.getTag());
-								adapter.notifyDataSetChanged();
-								onCreate(new Bundle()); 
-								Toast.makeText(Lista_Contatos.this, "Contato apagado com sucesso", Toast.LENGTH_SHORT).show();
-							}
-						}
-					});
-    				
-    				builderDelete.setNegativeButton("Não", new DialogInterface.OnClickListener() {
-						
-						@Override
-						public void onClick(DialogInterface dialog, int which) {
-							// TODO Auto-generated method stub
-							
-						}
-					});
-    				
-    				AlertDialog dialogDelete = builderDelete.create();
-    				dialogDelete.show();
-	            	return false;
-	            	
-                case R.id.edit:
-                	
-                	AlertDialog.Builder builder = new Builder(Lista_Contatos.this); 
-    				View view = LayoutInflater.from(Lista_Contatos.this).inflate(R.layout.dialog_edit_layout, null);
-    				builder.setView(view);
-    				builder.setTitle(R.string.edit);
-    				
-    				final EditText txtNome  = (EditText) view.findViewById(R.id.editNomeEdit);
-    				final TextView txtEmail  = (TextView) view.findViewById(R.id.textEmailEdit);
-    				final EditText txtTelefone = (EditText) view.findViewById(R.id.editTelefoneEdit);
-    				
-    				txtNome.setText(adapter.getItem((Integer) mode.getTag()).getNome());
-    				txtEmail.setText(adapter.getItem((Integer) mode.getTag()).getEmail());
-    				txtTelefone.setText(adapter.getItem((Integer) mode.getTag()).getCelular());
-    				
-    				builder.setPositiveButton("Editar", new OnClickListener() {
-    					
-    					@Override
-    					public void onClick(DialogInterface dialog, int which) {
-    						
-    						AlertDialog dialogConfirmacao = ConfimationDialog.getConfirmationDialog(Lista_Contatos.this, "Confirmação", "Quer mesmo editar este contato?", new OnClickListener() {
-    							
-    							@Override
-    							public void onClick(DialogInterface dialog, int which) {
-    								// TODO Auto-generated method stub
-    								Pessoa p = new Pessoa();
-    								p.setCelular(txtTelefone.getText().toString());
-    								p.setNome(txtNome.getText().toString());
-    								p.setEmail(txtEmail.getText().toString());
-    								if(pessoaDAO.update(p) > -1)
-    								{
-    									Lista_Contatos.listaContatos.get((Integer) mode.getTag()).setNome(txtNome.getText().toString());
-        								Lista_Contatos.listaContatos.get((Integer) mode.getTag()).setEmail(txtEmail.getText().toString());
-        								Lista_Contatos.listaContatos.get((Integer) mode.getTag()).setCelular(txtTelefone.getText().toString());
-        								Toast.makeText(Lista_Contatos.this, "Contato editado com sucesso", Toast.LENGTH_SHORT).show();
-        								adapter.notifyDataSetChanged();	
-    								}
-    							}
-    						}, new OnClickListener() {
-    							
-    							@Override
-    							public void onClick(DialogInterface dialog, int which) {
-    								// TODO Auto-generated method stub
-    								isLongClicked = false;
-    							}
-    						});
-    						dialogConfirmacao.show();
-    					}
-    				});
-    				
-    				builder.setNegativeButton("Cancelar", new OnClickListener() {
-    					
-    					@Override
-    					public void onClick(DialogInterface dialog, int which) {
-    						// TODO Auto-generated method stub
-    						
-    					}
-    				});
-    				AlertDialog dialogEdit = builder.create();
-    				dialogEdit.show();
-                    return true;
-                default:
-                    return false;
-				}
-			}
-			
-			@Override
-			public void onItemCheckedStateChanged(ActionMode mode, int position,
-					long id, boolean checked) {
-				// TODO Auto-generated method stub
-				adapter.notifyDataSetChanged();
-				if(checked)
-				{
-					selectedItemId = position;
-				}
-				else
-				{
-					selectedItemId = -1;
-				}
-				mode.setTitle(listaContatos.get(position).getNome());
-				mode.setSubtitle("Selecionado");
-				mode.setTag(position);
-			}
-		});
-		
+		listview.setMultiChoiceModeListener(new MultiChoiceMode());		
 		listview.setOnItemClickListener(new OnItemClickListener() {
 
 			@Override
-			public void onItemClick(AdapterView<?> arg0, View arg1, int position,
-					long arg3) {
-				
+			public void onItemClick(AdapterView<?> arg0, View arg1, int position, long arg3) {
 				if(!isLongClicked)
 				{
 					Intent intent = new Intent(Lista_Contatos.this, ConversasActivity.class);
@@ -237,26 +124,62 @@ public class Lista_Contatos extends Activity {
 					intent.putExtra("Email", adapter.getItem(position).getEmail());
 					startActivity(intent);	
 				}
+			}
+		});
+	}
+	
+	/* register the broadcast receiver with the intent values to be matched */
+	@Override
+	protected void onResume() {
+	    super.onResume();
+	    registerReceiver(mReceiver, mIntentFilter);
+	    mManager.discoverPeers(mChannel, new ActionListener() {
+			
+			@Override
+			public void onSuccess() {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public void onFailure(int reason) {
+				// TODO Auto-generated method stub
 				
 			}
 		});
 	}
 
 	@Override
+	public void onPeersAvailable(WifiP2pDeviceList peers) {
+		for (WifiP2pDevice peer : peers.getDeviceList()) {
+			Pessoa user = new Pessoa();
+			Log.i("PEER", peer.deviceName);
+			user.setNome(peer.deviceName);
+			listaContatos.add(user);
+			adapter.notifyDataSetChanged();
+		}
+	}
+
+	/* unregister the broadcast receiver */
+	@Override
+	protected void onPause() {
+	    super.onPause();
+	    unregisterReceiver(mReceiver);
+	}
+	
+	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.lista__contatos, menu);
-	
 		return true;
 	}
-	
+
 	@Override
 	public boolean onMenuItemSelected(int featureId, MenuItem item) {
 		// TODO Auto-generated method stub
 		switch(item.getItemId())
 		{
 			case R.id.create_new:
-				
 				DialogAdd.getDialog(this,new View.OnClickListener() {
 					
 					@Override
@@ -264,61 +187,62 @@ public class Lista_Contatos extends Activity {
 						Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 					    startActivityForResult(intent, CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE);
 					}
-				}, new OnClickListener() 
-				{
-					
-					@Override
-					public void onClick(DialogInterface dialog, int which) 
-					{
-						if(!hasPhoto)
-						{
-							pessoa.setNome(DialogAdd.txtNome.getText().toString());
-							pessoa.setEmail(DialogAdd.txtEmail.getText().toString());
-							pessoa.setCelular(DialogAdd.txtTelefone.getText().toString());
-							pessoa.setFoto(null);
-							if(pessoaDAO.insert(pessoa) > -1)
-							{
-								Lista_Contatos.listaContatos.add(pessoa);
-								onCreate(new Bundle());
-								Lista_Contatos.adapter.notifyDataSetChanged();
-								Toast.makeText(Lista_Contatos.this, "Contato adicionado", Toast.LENGTH_SHORT).show();
-							}
-							else
-							{
-								DialogAdd.txtEmail.setText("");
-								DialogAdd.txtNome.setText("");
-								DialogAdd.txtTelefone.setText("");
-								Toast.makeText(Lista_Contatos.this, "Contato Inválido", Toast.LENGTH_SHORT).show();
-							}
-						}
-						else if(hasPhoto)
-						{
-							pessoa.setNome(DialogAdd.txtNome.getText().toString());
-							pessoa.setEmail(DialogAdd.txtEmail.getText().toString());
-							pessoa.setCelular(DialogAdd.txtTelefone.getText().toString());
-							if(pessoaDAO.insert(pessoa) > -1)
-							{
-								Lista_Contatos.listaContatos.add(pessoa);
-								onCreate(new Bundle());
-								Lista_Contatos.adapter.notifyDataSetChanged();
-								Toast.makeText(Lista_Contatos.this, "Contato adicionado", Toast.LENGTH_SHORT).show();
-							}
-							else
-							{
-								DialogAdd.txtEmail.setText("");
-								DialogAdd.txtNome.setText("");
-								DialogAdd.txtTelefone.setText("");
-								
-								Toast.makeText(Lista_Contatos.this, "Contato Inválido", Toast.LENGTH_SHORT).show();
-							}
-							hasPhoto = false;
-						}	
-					}
-				}).show();
+				}, clickPosButton).show();
 				break;
 		}
 		return super.onMenuItemSelected(featureId, item);
 	}
+	
+	private OnClickListener clickPosButton = new OnClickListener(){
+		
+		@Override
+		public void onClick(DialogInterface dialog, int which) 
+		{
+			if(!hasPhoto)
+			{
+				pessoa.setNome(DialogAdd.txtNome.getText().toString());
+				pessoa.setEmail(DialogAdd.txtEmail.getText().toString());
+				pessoa.setCelular(DialogAdd.txtTelefone.getText().toString());
+				pessoa.setFoto(null);
+				if(pessoaDAO.insert(pessoa) > -1)
+				{
+					Lista_Contatos.listaContatos.add(pessoa);
+					onCreate(new Bundle());
+					Lista_Contatos.adapter.notifyDataSetChanged();
+					Toast.makeText(Lista_Contatos.this, "Contato adicionado", Toast.LENGTH_SHORT).show();
+				}
+				else
+				{
+					DialogAdd.txtEmail.setText("");
+					DialogAdd.txtNome.setText("");
+					DialogAdd.txtTelefone.setText("");
+					Toast.makeText(Lista_Contatos.this, "Contato Inválido", Toast.LENGTH_SHORT).show();
+				}
+			}
+			else if(hasPhoto)
+			{
+				pessoa.setNome(DialogAdd.txtNome.getText().toString());
+				pessoa.setEmail(DialogAdd.txtEmail.getText().toString());
+				pessoa.setCelular(DialogAdd.txtTelefone.getText().toString());
+				if(pessoaDAO.insert(pessoa) > -1)
+				{
+					Lista_Contatos.listaContatos.add(pessoa);
+					onCreate(new Bundle());
+					Lista_Contatos.adapter.notifyDataSetChanged();
+					Toast.makeText(Lista_Contatos.this, "Contato adicionado", Toast.LENGTH_SHORT).show();
+				}
+				else
+				{
+					DialogAdd.txtEmail.setText("");
+					DialogAdd.txtNome.setText("");
+					DialogAdd.txtTelefone.setText("");
+					
+					Toast.makeText(Lista_Contatos.this, "Contato Inválido", Toast.LENGTH_SHORT).show();
+				}
+				hasPhoto = false;
+			}	
+		}
+	};
 	
 	protected void onActivityResult (int requestCode, int resultCode, Intent data)
 	{
@@ -350,6 +274,163 @@ public class Lista_Contatos extends Activity {
 			
 		}
     
+	}
+
+	@Override
+	public void onWifiDirectStateChange(boolean state) {
+		wifiDirectState = state;
+		if(state){
+			ivWifiDirect.setImageResource(android.R.drawable.presence_online);
+		}else{
+			ivWifiDirect.setImageResource(android.R.drawable.presence_offline);
+		}
+	}
+	
+	class MultiChoiceMode implements MultiChoiceModeListener {
+		
+		//Implementar nova ACTIONBAR DINAMICA
+		@Override
+		public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+			// TODO Auto-generated method stub
+			return false;
+		}
+		
+		@Override
+		public void onDestroyActionMode(ActionMode mode) {
+			// TODO Auto-generated method stub
+			selectedItemId = -1;
+			adapter.notifyDataSetChanged();
+			
+		}
+		
+		@Override
+		public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+			// TODO Auto-generated method stub
+			MenuInflater inflater = mode.getMenuInflater();
+	        inflater.inflate(R.menu.lista__contatos_selecionados, menu);
+	        return true;
+
+		}
+		
+		@Override
+		public boolean onActionItemClicked(final ActionMode mode,  final MenuItem item) {
+			// TODO Auto-generated method stub
+			switch (item.getItemId()) {
+            case R.id.delete: 
+            	AlertDialog.Builder builderDelete = new Builder(Lista_Contatos.this); 
+				builderDelete.setTitle("Confimação").setMessage("Deseja realmente apagar este contato?");
+				builderDelete.setPositiveButton("Sim", new DialogInterface.OnClickListener() {
+					
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						Pessoa p = listaContatos.get((Integer) mode.getTag());
+						if(pessoaDAO.delete(p))
+						{
+							
+							listaContatos.remove((Integer) mode.getTag());
+							adapter.notifyDataSetChanged();
+							onCreate(new Bundle()); 
+							Toast.makeText(Lista_Contatos.this, "Contato apagado com sucesso", Toast.LENGTH_SHORT).show();
+						}
+					}
+				});
+				
+				builderDelete.setNegativeButton("Não", new DialogInterface.OnClickListener() {
+					
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						// TODO Auto-generated method stub
+						
+					}
+				});
+				
+				AlertDialog dialogDelete = builderDelete.create();
+				dialogDelete.show();
+            	return false;
+            	
+            case R.id.edit:
+            	
+            	AlertDialog.Builder builder = new Builder(Lista_Contatos.this); 
+				View view = LayoutInflater.from(Lista_Contatos.this).inflate(R.layout.dialog_edit_layout, null);
+				builder.setView(view);
+				builder.setTitle(R.string.edit);
+				
+				final EditText txtNome  = (EditText) view.findViewById(R.id.editNomeEdit);
+				final TextView txtEmail  = (TextView) view.findViewById(R.id.textEmailEdit);
+				final EditText txtTelefone = (EditText) view.findViewById(R.id.editTelefoneEdit);
+				
+				txtNome.setText(adapter.getItem((Integer) mode.getTag()).getNome());
+				txtEmail.setText(adapter.getItem((Integer) mode.getTag()).getEmail());
+				txtTelefone.setText(adapter.getItem((Integer) mode.getTag()).getCelular());
+				
+				builder.setPositiveButton("Editar", new OnClickListener() {
+					
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						
+						AlertDialog dialogConfirmacao = ConfimationDialog.getConfirmationDialog(Lista_Contatos.this, "Confirmação", "Quer mesmo editar este contato?", new OnClickListener() {
+							
+							@Override
+							public void onClick(DialogInterface dialog, int which) {
+								// TODO Auto-generated method stub
+								Pessoa p = new Pessoa();
+								p.setCelular(txtTelefone.getText().toString());
+								p.setNome(txtNome.getText().toString());
+								p.setEmail(txtEmail.getText().toString());
+								if(pessoaDAO.update(p) > -1)
+								{
+									Lista_Contatos.listaContatos.get((Integer) mode.getTag()).setNome(txtNome.getText().toString());
+    								Lista_Contatos.listaContatos.get((Integer) mode.getTag()).setEmail(txtEmail.getText().toString());
+    								Lista_Contatos.listaContatos.get((Integer) mode.getTag()).setCelular(txtTelefone.getText().toString());
+    								Toast.makeText(Lista_Contatos.this, "Contato editado com sucesso", Toast.LENGTH_SHORT).show();
+    								adapter.notifyDataSetChanged();	
+								}
+							}
+						}, new OnClickListener() {
+							
+							@Override
+							public void onClick(DialogInterface dialog, int which) {
+								// TODO Auto-generated method stub
+								isLongClicked = false;
+							}
+						});
+						dialogConfirmacao.show();
+					}
+				});
+				
+				builder.setNegativeButton("Cancelar", new OnClickListener() {
+					
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						// TODO Auto-generated method stub
+						
+					}
+				});
+				AlertDialog dialogEdit = builder.create();
+				dialogEdit.show();
+                return true;
+            default:
+                return false;
+			}
+		}
+		
+		@Override
+		public void onItemCheckedStateChanged(ActionMode mode, int position,
+				long id, boolean checked) {
+			// TODO Auto-generated method stub
+			adapter.notifyDataSetChanged();
+			if(checked)
+			{
+				selectedItemId = position;
+			}
+			else
+			{
+				selectedItemId = -1;
+			}
+			mode.setTitle(listaContatos.get(position).getNome());
+			mode.setSubtitle("Selecionado");
+			mode.setTag(position);
+		}
 	}
 
 }
