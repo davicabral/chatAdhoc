@@ -13,5 +13,6 @@
     <string name="title_activity_tela_login">TelaLogin</string>
     <string name="nomeCadastro">Nome</string>
     <string name="telCadastro">Tel:</string>
+    <string name="title_activity_msg">MsgActivity</string>
 
 </resources>

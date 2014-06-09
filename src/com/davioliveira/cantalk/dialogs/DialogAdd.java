@@ -33,7 +33,7 @@ public class DialogAdd extends AlertDialog{
 		txtEmail  = (EditText) view.findViewById(R.id.editEmail);
 		txtTelefone = (EditText) view.findViewById(R.id.editTelefone);
 		
-		ImageButton btnFoto  = (ImageButton) view.findViewById(R.id.imageButton1);
+		ImageButton btnFoto  = (ImageButton) view.findViewById(R.id.etSend);
 		
 		btnFoto.setOnClickListener(clickBotaoFoto);
 		

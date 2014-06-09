@@ -13,7 +13,7 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.davioliveira.cantalk.Lista_Contatos;
+import com.davioliveira.cantalk.ListaContatosActivity;
 import com.davioliveira.cantalk.R;
 import com.davioliveira.cantalk.utils.Pessoa;
 
@@ -92,7 +92,7 @@ public class AdapterContatos extends BaseAdapter{
 			            BitmapFactory.decodeByteArray(imageAsBytes, 0, imageAsBytes.length)
 			    );
 		}
-		if(Lista_Contatos.selectedItemId == position)
+		if(ListaContatosActivity.selectedItemId == position)
 		{
 			rowView.setBackgroundResource(R.color.selectedItem);
 		}
@@ -109,7 +109,8 @@ public class AdapterContatos extends BaseAdapter{
 		notifyDataSetChanged();
 	}
 
-	
-
+	public void removeAll() {
+		listaContatos.clear();
+	}
 
 }

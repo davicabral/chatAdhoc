@@ -28,7 +28,7 @@ public class TelaCadastro extends Activity {
 		
 		TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE); 
 		String number = tm.getLine1Number();
-		if(!number.isEmpty())
+		if(number!= null && !number.isEmpty())
 		{
 			String numFormatado = "Tel: (" + number.charAt(0)+number.charAt(1)+ ") ";
 			

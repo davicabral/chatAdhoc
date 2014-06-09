@@ -1,11 +1,14 @@
 package com.davioliveira.cantalk.utils;
 
+import android.net.wifi.p2p.WifiP2pDevice;
+
 public class Pessoa {
 	
 	private String nome;
 	private String email;
 	private String celular;
 	private String foto;
+	private WifiP2pDevice peer;
 	
 	public Pessoa()
 	{
@@ -48,4 +51,11 @@ public class Pessoa {
 	public void setFoto(String foto) {
 		this.foto = foto;
 	}
+	public WifiP2pDevice getPeer() {
+		return peer;
+	}
+	public void setPeer(WifiP2pDevice peer) {
+		this.peer = peer;
+	}
+	
 }
