@@ -1,6 +1,7 @@
 package com.davioliveira.cantalk;
 
 import android.app.Activity;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
@@ -38,6 +39,12 @@ public class MsgActivity extends Activity implements OnClickListener, OnKeyListe
 		lvMsgs.setAdapter(msgAdapter);
 		ibSend.setOnClickListener(this);
 		etMsg.setOnKeyListener(this);
+
+        scrollListToEnd();
+	}
+
+	private void scrollListToEnd() {
+		lvMsgs.setSelection(msgAdapter.getCount() - 1);
 	}
 
 	@Override
@@ -46,7 +53,14 @@ public class MsgActivity extends Activity implements OnClickListener, OnKeyListe
 		canTalkApp.activeConversation.SendAndAddMsg(msg);
 		etMsg.setText("");
 	}
-
+	@Override
+	public void onConfigurationChanged(Configuration newConfig) {
+	    super.onConfigurationChanged(newConfig);
+	    // Checks whether a hardware keyboard is available
+	    if (newConfig.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO) {
+	    	scrollListToEnd();
+	    } 
+	}
 	@Override
 	public boolean onKey(View v, int keyCode, KeyEvent event) {
 		if(keyCode == KeyEvent.KEYCODE_ENTER){
@@ -58,17 +72,11 @@ public class MsgActivity extends Activity implements OnClickListener, OnKeyListe
 
 	@Override
 	public void newItemAdded() {
-//		lvMsgs.post(new Runnable() {
-//	        @Override
-//	        public void run() {
-//	            lvMsgs.setSelection(msgAdapter.getCount() - 1);
-//	        }
-//	    });
 		runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
 				msgAdapter.notifyDataSetChanged();
-	            lvMsgs.setSelection(msgAdapter.getCount() - 1);
+	            scrollListToEnd();
 			}
 		});
 	}

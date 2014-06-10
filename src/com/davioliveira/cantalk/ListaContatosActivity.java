@@ -43,6 +43,7 @@ import com.davioliveira.cantalk.dialogs.DialogAdd;
 import com.davioliveira.cantalk.utils.Pessoa;
 import com.ess.wifi_direct.WifiDirectListener;
 import com.ess.wifi_direct.WifiDirectMgr;
+import com.ess.wifi_direct.model.Conversation;
 
 @SuppressLint("NewApi")
 public class ListaContatosActivity extends Activity implements WifiDirectListener{
@@ -95,6 +96,12 @@ public class ListaContatosActivity extends Activity implements WifiDirectListene
 					int position, long id) {
 				
 				Pessoa pessoa = adapter.getItem(position);
+				Conversation conversation = canTalkApp.haveConversation(pessoa.getNome());
+				if(conversation != null){
+					canTalkApp.showMsgActivity(conversation);
+					return;
+				}
+				
 				canTalkApp.wifiDirectMgr.connect(pessoa.getPeer());
 				
 				Builder builder = new AlertDialog.Builder(thisActivity);

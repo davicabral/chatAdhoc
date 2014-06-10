@@ -17,6 +17,7 @@ import com.google.gson.Gson;
 public class Conversation {
 
 	private String mySenderName;
+	private String destName;
 	private ArrayList<Msg> msgs = new ArrayList<Msg>();
 	private MsgAdapter msgAdapter;
 
@@ -31,6 +32,14 @@ public class Conversation {
 		destIP = socket.getRemoteIP();
 	}
 	
+	public String getDestName(){
+		return destName;
+	}
+
+	public void setDestName(String destName) {
+		this.destName = destName;
+	}
+
 	public SocketAddress getDestIP() {
 		return destIP;
 	}
