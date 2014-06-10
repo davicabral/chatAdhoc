@@ -87,13 +87,13 @@ public class WifiDirectBroadcastReceiver extends BroadcastReceiver
             // incoming connections.
         	Log.i("CON", "initServer");
         	Toast.makeText(canTalkApp, "Init Server", Toast.LENGTH_SHORT).show();
-        	canTalkApp.initServer(wifiDirectListener);
+        	canTalkApp.initServer();
         } else if (info.groupFormed) {
             // The other device acts as the client. In this case, you'll want
             // to create a client thread that connects to the group owner.
         	Log.i("CON", "initClient");
         	Toast.makeText(canTalkApp, "Init Client", Toast.LENGTH_SHORT).show();
-        	canTalkApp.initClient(info.groupOwnerAddress, wifiDirectListener);
+        	canTalkApp.initClient(info.groupOwnerAddress);
         }
 	}
 

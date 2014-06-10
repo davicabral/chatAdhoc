@@ -1,7 +1,6 @@
 package com.davioliveira.cantalk;
 
 import java.io.ByteArrayOutputStream;
-import java.net.SocketAddress;
 import java.util.Collection;
 
 import android.annotation.SuppressLint;
@@ -59,7 +58,6 @@ public class ListaContatosActivity extends Activity implements WifiDirectListene
 	//WifiDirect variables
 
 	private Activity thisActivity;
-	private AlertDialog alertDlgConnecting;
 	private CanTalkApp canTalkApp;
 	private ImageView ivWifiDirect;
 	
@@ -111,8 +109,8 @@ public class ListaContatosActivity extends Activity implements WifiDirectListene
 						canTalkApp.wifiDirectMgr.cancelConnect();
 					}
 				});
-				alertDlgConnecting = builder.create();
-				alertDlgConnecting.show();
+				canTalkApp.alertDlgConnecting = builder.create();
+				canTalkApp.alertDlgConnecting.show();
 			}
 		});
 	}
@@ -199,15 +197,6 @@ public class ListaContatosActivity extends Activity implements WifiDirectListene
 		}
 	}
 	
-	@Override
-	public void onConnected(SocketAddress destIP) {
-		if(alertDlgConnecting != null)
-			alertDlgConnecting.dismiss();
-		Intent i = new Intent(this, MsgActivity.class);
-		i.putExtra(MsgActivity.DEST_IP, destIP);
-		startActivity(i);
-	}
-
 	@Override
 	public void onWifiDirectStateChange(boolean state) {
 		canTalkApp.wifiDirectState = state;

@@ -12,72 +12,66 @@ import android.widget.TextView;
 
 import com.davioliveira.cantalk.R;
 import com.ess.cmd.models.AClientSocketMsg;
+import com.google.gson.Gson;
 
 public class Conversation {
 
 	private String mySenderName;
-	private String destName;
+	private ArrayList<Msg> msgs = new ArrayList<Msg>();
+	private MsgAdapter msgAdapter;
 
 	private SocketAddress destIP;
 	private AClientSocketMsg socket;
-	private ArrayList<Msg> msgs = new ArrayList<Msg>();
-	private msgAdapter msgAdapter;
+	private NewItemListener newItemListener;
 	
-	private Runnable runOnNewItem;
-	
-	public Conversation(Context context, String mySenderName, String destName, AClientSocketMsg socket) {
+	public Conversation(Context context, String mySenderName, AClientSocketMsg socket) {
 		this.socket = socket;
-		this.destName = destName;
 		this.mySenderName = mySenderName;
-		msgAdapter = new msgAdapter(context, msgs);
+		msgAdapter = new MsgAdapter(context, msgs);
 		destIP = socket.getRemoteIP();
 	}
 	
 	public SocketAddress getDestIP() {
 		return destIP;
 	}
-	
-	public String getDestName() {
-		return destName;
-	}
 
-	public msgAdapter getMsgAdapter() {
+	public MsgAdapter getMsgAdapter() {
 		return msgAdapter;
 	}
 
+	public void setNewItemListener(NewItemListener newItemListener) {
+		this.newItemListener = newItemListener;
+	}
+	
 	public void AddMsg(Msg msg){
 		msgs.add(msg);
-		msgAdapter.notifyDataSetChanged();
-		if(runOnNewItem != null)
-			new Thread(runOnNewItem).start();
+		if(newItemListener != null)
+			newItemListener.newItemAdded();
 	}
 	
 	public void SendAndAddMsg(Msg msg){
 		try {
-			socket.sendMsg(msg.getMsg());
+			socket.sendMsg(new Gson().toJson(msg));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		AddMsg(msg);
 	}
 	
-	class msgAdapter extends ArrayAdapter<Msg> {
+	class MsgAdapter extends ArrayAdapter<Msg> {
 
-		public msgAdapter(Context context, ArrayList<Msg> users) {
+		public MsgAdapter(Context context, ArrayList<Msg> users) {
 	       super(context, R.layout.each_msg_left, users);
 	    }
 
 	    @Override
 	    public View getView(int position, View convertView, ViewGroup parent) {
 	       Msg msg = getItem(position);    
-	       // Check if an existing view is being reused, otherwise inflate the view
-	       if (convertView == null) {
-	          LayoutInflater li = LayoutInflater.from(getContext());
-	          if(msg.getSenderName().equals(mySenderName))
-	        	  convertView = li.inflate(R.layout.each_msg_left, parent, false);
-	          else
-	        	  convertView = li.inflate(R.layout.each_msg_right, parent, false);
-	       }
+           LayoutInflater li = LayoutInflater.from(getContext());
+           if(msg.getSenderName().equals(mySenderName))
+        	  convertView = li.inflate(R.layout.each_msg_right, parent, false);
+           else
+        	  convertView = li.inflate(R.layout.each_msg_left, parent, false);
 	       // Lookup view for data population
 	       TextView tvName = (TextView) convertView.findViewById(R.id.tvSender);
 	       TextView tvTime = (TextView) convertView.findViewById(R.id.tvTime);
@@ -92,8 +86,4 @@ public class Conversation {
 		
 	}
 
-	public void runOnNewItem(Runnable runnable) {
-		runOnNewItem = runnable;
-	}
-	
 }

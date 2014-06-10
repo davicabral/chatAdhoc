@@ -5,7 +5,9 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 
+import android.app.AlertDialog;
 import android.app.Application;
+import android.content.Intent;
 import android.util.Log;
 
 import com.ess.cmd.models.AClientSocketMsg;
@@ -18,6 +20,7 @@ import com.ess.wifi_direct.WifiDirectListener;
 import com.ess.wifi_direct.WifiDirectMgr;
 import com.ess.wifi_direct.model.Conversation;
 import com.ess.wifi_direct.model.Msg;
+import com.google.gson.Gson;
 
 public class CanTalkApp extends Application implements ServerSocketMsgListener, ClientSocketMsgListener{
 
@@ -25,11 +28,24 @@ public class CanTalkApp extends Application implements ServerSocketMsgListener, 
 	public WifiDirectMgr wifiDirectMgr;
 	public boolean wifiDirectState;
 	public String mySenderName;
+	public AlertDialog alertDlgConnecting;
+	public Conversation activeConversation;
 
 	private ArrayList<Conversation> conversations = new ArrayList<Conversation>();
 	private ServerSocketMsg serverSocket;
-	private WifiDirectListener wifiDirectListener;
 
+	public void dismissAlertDlg(){
+		if(alertDlgConnecting != null)
+			alertDlgConnecting.dismiss();
+	}
+	
+	private void showMsgActivity(Conversation conversation){
+		activeConversation = conversation;
+		Intent i = new Intent(this, MsgActivity.class);
+		i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		startActivity(i);
+	}
+	
 	public Conversation getConversation(SocketAddress destIP) {
 		for (Conversation conversation : conversations) {
 			if(conversation.getDestIP().equals(destIP))
@@ -38,29 +54,23 @@ public class CanTalkApp extends Application implements ServerSocketMsgListener, 
 		return null;
 	}
 
-	public void onReceiveMsg(SocketAddress ip, String msg) {
-		final Conversation conversation = getConversation(ip);
-		final Msg objMsg = new Msg(conversation.getDestName(), msg);
-		wifiDirectListener.execOnUiThread(new Runnable() {
-			@Override
-			public void run() {
-				conversation.AddMsg(objMsg);
-			}
-		});
+	public void onReceiveMsg(SocketAddress ip, final Msg objMsg) {
+		Conversation conversation = getConversation(ip);
+		conversation.AddMsg(objMsg);
 	}
 	
-	public void initServer(WifiDirectListener wifiDirectListener) {
-		this.wifiDirectListener = wifiDirectListener;
+	public void initServer() {
 		serverSocket = new ServerSocketMsg(PORT, 10, this);
 		serverSocket.startListen();
 	}
 
 	private void configNewConversation(SocketAddress ip, AClientSocketMsg socket) {
-		if(getConversation(ip) == null){
-			Conversation conversation = new Conversation(this, mySenderName, "destName", socket);
+		Conversation conversation = getConversation(ip);
+		if(conversation == null){
+			conversation = new Conversation(this, mySenderName, socket);
 			conversations.add(conversation);
 		}
-		wifiDirectListener.onConnected(ip);
+		showMsgActivity(conversation);
 	}
 
 	@Override
@@ -76,11 +86,11 @@ public class CanTalkApp extends Application implements ServerSocketMsgListener, 
 
 	@Override
 	public void onRemoteClientMsg(SocketAddress ip, String msg) {
-		onReceiveMsg(ip, msg);
+		Msg objMsg = new Gson().fromJson(msg, Msg.class);
+		onReceiveMsg(ip, objMsg);
 	}
 
-	public void initClient(final InetAddress groupOwnerAddress, WifiDirectListener wifiDirectListener) {
-		this.wifiDirectListener = wifiDirectListener;
+	public void initClient(final InetAddress groupOwnerAddress) {
 		final ClientSocketMsg clientSocketMsg = new ClientSocketMsg(this);
 		new Thread(new Runnable() {
 			@Override
@@ -102,7 +112,8 @@ public class CanTalkApp extends Application implements ServerSocketMsgListener, 
 
 	@Override
 	public void onServerMsg(SocketAddress ip, String msg) {
-		onReceiveMsg(ip, msg);
+		Msg objMsg = new Gson().fromJson(msg, Msg.class);
+		onReceiveMsg(ip, objMsg);
 	}
 
 	public void clearSockets(){

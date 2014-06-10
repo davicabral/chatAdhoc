@@ -1,7 +1,5 @@
 package com.davioliveira.cantalk;
 
-import java.net.SocketAddress;
-
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.KeyEvent;
@@ -13,19 +11,15 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ListView;
 
-import com.ess.wifi_direct.model.Conversation;
 import com.ess.wifi_direct.model.Msg;
+import com.ess.wifi_direct.model.NewItemListener;
 
-public class MsgActivity extends Activity implements OnClickListener, OnKeyListener {
+public class MsgActivity extends Activity implements OnClickListener, OnKeyListener, NewItemListener {
 
-	public static final String DEST_IP = "destIP";
-	
 	private CanTalkApp canTalkApp;
 	private ListView lvMsgs;
 	private EditText etMsg;
 	private ImageButton ibSend;
-
-	private Conversation conversation;
 
 	private ArrayAdapter<Msg> msgAdapter;
 	
@@ -39,20 +33,8 @@ public class MsgActivity extends Activity implements OnClickListener, OnKeyListe
 		etMsg = (EditText) findViewById(R.id.etMsg);
 		ibSend = (ImageButton) findViewById(R.id.ibSend);
 		
-		SocketAddress destIP = (SocketAddress) getIntent().getSerializableExtra(DEST_IP);
-		conversation = canTalkApp.getConversation(destIP);
-		conversation.runOnNewItem(new Runnable() {
-			@Override
-			public void run() {
-				lvMsgs.post(new Runnable() {
-			        @Override
-			        public void run() {
-			            lvMsgs.setSelection(msgAdapter.getCount() - 1);
-			        }
-			    });
-			}
-		});
-		msgAdapter = conversation.getMsgAdapter();
+		canTalkApp.activeConversation.setNewItemListener(this);
+		msgAdapter = canTalkApp.activeConversation.getMsgAdapter();
 		lvMsgs.setAdapter(msgAdapter);
 		ibSend.setOnClickListener(this);
 		etMsg.setOnKeyListener(this);
@@ -61,7 +43,7 @@ public class MsgActivity extends Activity implements OnClickListener, OnKeyListe
 	@Override
 	public void onClick(View v) {
 		Msg msg = new Msg(canTalkApp.mySenderName, etMsg.getText().toString());
-		conversation.SendAndAddMsg(msg);
+		canTalkApp.activeConversation.SendAndAddMsg(msg);
 		etMsg.setText("");
 	}
 
@@ -72,6 +54,23 @@ public class MsgActivity extends Activity implements OnClickListener, OnKeyListe
 			return true;
 		}
 		return false;
+	}
+
+	@Override
+	public void newItemAdded() {
+//		lvMsgs.post(new Runnable() {
+//	        @Override
+//	        public void run() {
+//	            lvMsgs.setSelection(msgAdapter.getCount() - 1);
+//	        }
+//	    });
+		runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				msgAdapter.notifyDataSetChanged();
+	            lvMsgs.setSelection(msgAdapter.getCount() - 1);
+			}
+		});
 	}
 	
 }
